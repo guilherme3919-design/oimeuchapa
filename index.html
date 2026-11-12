@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz de Ciências - Movimentos da Terra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --roxo-1: #8e44ad;
+    --roxo-2: #5b2a9e;
+    --verde: #2ecc71;
+    --vermelho: #e74c3c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: #fff;
+    color: #111;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* ===== Telas (SPA) ===== */
+  .screen {
+    display: none;
+    position: relative;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 24px 20px;
+    flex-direction: column;
+    align-items: center;
+  }
+  .screen.active { display: flex; animation: fade .4s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* ===== Logos (placeholders) =====
+     Troque os arquivos logo-esfa.png e logo-scalifra.png (mesma pasta do index.html). */
+  .logos {
+    position: absolute;
+    top: 16px; left: 16px;
+    display: flex; gap: 12px;
+    z-index: 2;
+  }
+  .logo-box {
+    width: 84px; height: 84px;
+    border: 2px dashed #b9b9c9;
+    border-radius: 12px;
+    background: #f6f6fb;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    font-size: 11px; line-height: 1.2; color: #8a8aa0;
+    overflow: hidden;
+    position: relative;
+  }
+  .logo-box img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: contain;
+    background: #fff;
+  }
+
+  /* ===== Tela inicial ===== */
+  #menu { justify-content: center; text-align: center; }
+  .menu-title {
+    font-family: 'Great Vibes', cursive;
+    font-size: clamp(2.6rem, 8vw, 5.5rem);
+    line-height: 1.15;
+    color: #3b1d6e;
+    max-width: 900px;
+    margin-top: 60px;
+  }
+  .btn-iniciar {
+    margin-top: auto;
+    margin-bottom: 40px;
+    padding: 20px 72px;
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(135deg, var(--roxo-1), var(--roxo-2));
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 10px 22px rgba(91, 42, 158, .4);
+    transition: transform .15s, box-shadow .15s;
+  }
+  .btn-iniciar:hover { transform: translateY(-3px); box-shadow: 0 14px 28px rgba(91, 42, 158, .5); }
+  .btn-iniciar:active { transform: translateY(0); }
+  #menu .spacer { flex: 1; }
+
+  /* ===== Perguntas ===== */
+  #pergunta { justify-content: flex-start; }
+  .progresso {
+    margin-top: 8px;
+    font-size: .9rem;
+    color: #888;
+    letter-spacing: .1em;
+    z-index: 2;
+  }
+  .q-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    text-align: center;
+    font-size: clamp(1.5rem, 4.5vw, 3rem);
+    margin-top: 12px;
+    max-width: 860px;
+    z-index: 2;
+  }
+  .answers-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    z-index: 2;
+  }
+  .answers {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    width: 100%;
+    max-width: 620px;
+  }
+  .answer {
+    background: #000;
+    color: #fff;
+    border: none;
+    border-radius: 16px;
+    padding: 18px 14px;
+    min-height: 90px;
+    font-size: clamp(.9rem, 2.6vw, 1.1rem);
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform .15s, background .2s;
+  }
+  .answer:hover:not(:disabled) { transform: scale(1.04); }
+  .answer:disabled { cursor: default; }
+  .answer.correct { background: var(--verde); }
+  .answer.wrong { background: var(--vermelho); }
+
+  /* ===== Decorações espaciais =====
+     Para usar imagens reais, troque o emoji por <img src="terra.png"> dentro do elemento. */
+  .decor {
+    position: absolute;
+    z-index: 1;
+    user-select: none;
+    pointer-events: none;
+    line-height: 1;
+    filter: drop-shadow(0 6px 10px rgba(0,0,0,.2));
+  }
+  .decor img { width: 100%; height: 100%; object-fit: contain; }
+  .decor.terra { font-size: clamp(60px, 14vw, 150px); }
+  .decor.lua { font-size: clamp(44px, 10vw, 110px); }
+  .pos-bl { bottom: 16px; left: 16px; }
+  .pos-br { bottom: 16px; right: 16px; }
+  .pos-tr { top: 16px; right: 16px; }
+  .pos-tl { top: 110px; left: 16px; }
+  .pos-r  { top: 50%; right: 16px; transform: translateY(-50%); }
+
+  /* ===== Tela final ===== */
+  #final { justify-content: center; text-align: center; gap: 18px; }
+  #final h1 {
+    font-family: 'Great Vibes', cursive;
+    font-size: clamp(3rem, 10vw, 5.5rem);
+    color: #3b1d6e;
+    font-weight: 400;
+  }
+  #final .score { font-size: clamp(1.3rem, 4vw, 2rem); font-weight: 600; }
+  #final .msg { color: #666; max-width: 480px; }
+  .trofeu { font-size: 4rem; }
+  #final .btn-iniciar { margin: 20px 0 0; }
+
+  /* ===== Responsivo ===== */
+  @media (max-width: 600px) {
+    .logo-box { width: 60px; height: 60px; font-size: 9px; }
+    .menu-title { margin-top: 90px; }
+    .answers { gap: 10px; }
+    .answer { min-height: 80px; padding: 12px 8px; border-radius: 14px; }
+    .pos-tl { top: 90px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ TELA INICIAL ============ -->
+<section id="menu" class="screen active">
+  <div class="logos">
+    <div class="logo-box">LOGO<br>ESFA Pelotas
+      <img src="logo-esfa.png" alt="Logo ESFA Pelotas" onerror="this.style.display='none'">
+    </div>
+    <div class="logo-box">LOGO<br>Scalifra-ZN
+      <img src="logo-scalifra.png" alt="Logo Scalifra-ZN" onerror="this.style.display='none'">
+    </div>
+  </div>
+
+  <h1 class="menu-title">Trabalho de Ciências - mostra de conhecimento</h1>
+  <div class="spacer"></div>
+  <button class="btn-iniciar" id="btnIniciar">iniciar</button>
+</section>
+
+<!-- ============ TELA DE PERGUNTA ============ -->
+<section id="pergunta" class="screen">
+  <div class="progresso" id="progresso"></div>
+  <h2 class="q-title" id="qTitle"></h2>
+  <div class="answers-wrap">
+    <div class="answers" id="answers"></div>
+  </div>
+  <div id="decor"></div>
+</section>
+
+<!-- ============ TELA FINAL ============ -->
+<section id="final" class="screen">
+  <div class="trofeu">🏆</div>
+  <h1>Parabéns!</h1>
+  <p class="score" id="score"></p>
+  <p class="msg" id="msg"></p>
+  <button class="btn-iniciar" id="btnReiniciar">Jogar Novamente</button>
+</section>
+
+<script>
+  // ===== Conteúdo do quiz =====
+  // decor: lista de decorações. tipo: 'terra' | 'lua'; pos: bl, br, tr, tl, r
+  const perguntas = [
+    {
+      titulo: "O que é rotação?",
+      alternativas: [
+        "o sol em volta da terra",
+        "ato de rotacionar coisas",
+        "O movimento da Terra girando em torno de si mesma",
+        "A Terra entrando dentro do Sol"
+      ],
+      correta: 2,
+      decor: [ { tipo: 'terra', pos: 'bl' }, { tipo: 'lua', pos: 'tr' } ]
+    },
+    {
+      titulo: "O que é a translação?",
+      alternativas: [
+        "O movimento da Terra girando em volta do Sol",
+        "não tem significado",
+        "isso não tem nada a ver com esse trabalho",
+        "é coisa de cientista"
+      ],
+      correta: 0,
+      decor: [ { tipo: 'terra', pos: 'r' } ]
+    },
+    {
+      titulo: "O que os movimentos da Terra influenciam na nossa vida?",
+      alternativas: [
+        "a nossa alimentação",
+        "as estações do ano e os dias e noites",
+        "as plantas de água doce",
+        "Nada"
+      ],
+      correta: 1,
+      decor: [ { tipo: 'lua', pos: 'tl' }, { tipo: 'terra', pos: 'br' } ]
+    }
+  ];
+
+  const EMOJI = { terra: '🌍', lua: '🌙' };
+  const IMG = { terra: 'terra.png', lua: 'lua.png' }; // imagens opcionais (mesma pasta)
+
+  // ===== Estado =====
+  let atual = 0;
+  let acertos = 0;
+  let travado = false;
+
+  // ===== Helpers =====
+  const $ = id => document.getElementById(id);
+  function mostrarTela(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    $(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  function renderDecor(lista) {
+    const box = $('decor');
+    box.innerHTML = '';
+    lista.forEach(d => {
+      const el = document.createElement('div');
+      el.className = `decor ${d.tipo} pos-${d.pos}`;
+      el.textContent = EMOJI[d.tipo];
+      // Se existir terra.png / lua.png, usa a imagem no lugar do emoji
+      const img = new Image();
+      img.alt = d.tipo;
+      img.onload = () => { el.textContent = ''; el.appendChild(img); el.style.width = el.style.height = d.tipo === 'terra' ? 'clamp(60px,14vw,150px)' : 'clamp(44px,10vw,110px)'; };
+      img.src = IMG[d.tipo];
+      box.appendChild(el);
+    });
+  }
+
+  function mostrarPergunta() {
+    const p = perguntas[atual];
+    travado = false;
+    $('progresso').textContent = `PERGUNTA ${atual + 1} / ${perguntas.length}`;
+    $('qTitle').textContent = p.titulo;
+
+    const wrap = $('answers');
+    wrap.innerHTML = '';
+    p.alternativas.forEach((texto, i) => {
+      const b = document.createElement('button');
+      b.className = 'answer';
+      b.textContent = texto;
+      b.addEventListener('click', () => responder(i, b));
+      wrap.appendChild(b);
+    });
+
+    renderDecor(p.decor);
+    mostrarTela('pergunta');
+  }
+
+  function responder(indice, botao) {
+    if (travado) return;
+    travado = true;
+    const p = perguntas[atual];
+    const botoes = document.querySelectorAll('#answers .answer');
+    botoes.forEach(b => b.disabled = true);
+
+    if (indice === p.correta) {
+      acertos++;
+      botao.classList.add('correct');
+    } else {
+      botao.classList.add('wrong');
+      botoes[p.correta].classList.add('correct'); // mostra a certa também
+    }
+
+    setTimeout(() => {
+      atual++;
+      if (atual < perguntas.length) mostrarPergunta();
+      else mostrarFinal();
+    }, 1000);
+  }
+
+  function mostrarFinal() {
+    $('score').textContent = `Você acertou ${acertos} de ${perguntas.length} perguntas!`;
+    const total = perguntas.length;
+    $('msg').textContent =
+      acertos === total ? 'Incrível! Você dominou os movimentos da Terra! 🌎' :
+      acertos >= total / 2 ? 'Muito bem! Você está no caminho certo!' :
+      'Continue estudando — você consegue melhorar!';
+    mostrarTela('final');
+  }
+
+  function iniciar() {
+    atual = 0;
+    acertos = 0;
+    mostrarPergunta();
+  }
+
+  $('btnIniciar').addEventListener('click', iniciar);
+  $('btnReiniciar').addEventListener('click', iniciar);
+</script>
+</body>
+</html>
